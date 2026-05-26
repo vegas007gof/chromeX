@@ -1,0 +1,26 @@
+{
+  "name": "chromex-browser",
+  "version": "1.0.0",
+  "description": "Portable browser with semantic Google filter",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --win portable --x64"
+  },
+  "build": {
+    "appId": "local.chromex.browser",
+    "productName": "ChromeX Browser",
+    "directories": { "output": "dist" },
+    "files": ["**/*"],
+    "extraResources": [
+      { "from": "../models", "to": "models", "filter": ["**/*"] },
+      { "from": "../server", "to": "server", "filter": ["**/*"] },
+      { "from": "../.venv", "to": "venv", "filter": ["**/*"] }
+    ],
+    "win": { "target": ["portable"] }
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  }
+}

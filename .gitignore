@@ -147,6 +147,13 @@ activemq-data/
 # SageMath parsed files
 *.sage.py
 
+# Local ML model (~120 MB) — use scripts/download_model.py
+models/
+
+# Electron build output
+browser/node_modules/
+browser/dist/
+
 # Environments
 .env
 .envrc
