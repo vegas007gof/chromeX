@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ChromeX</title>
+  <link rel="stylesheet" href="chromex.css" />
+  <style>
+    .wrap {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 48px 24px;
+      text-align: center;
+    }
+    .logo {
+      font-size: 42px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, #6eb6ff, #3d8bfd);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+    .tagline {
+      color: var(--muted);
+      margin-bottom: 36px;
+      font-size: 15px;
+    }
+    .search-box {
+      display: flex;
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 6px;
+      margin-bottom: 24px;
+    }
+    .search-box input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-size: 16px;
+      padding: 12px 14px;
+      outline: none;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      text-align: left;
+      margin-top: 32px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .card strong {
+      display: block;
+      color: var(--text);
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+    #status-line {
+      margin-top: 20px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="logo">ChromeX</div>
+    <p class="tagline">Поиск Google с семантическим фильтром результатов</p>
+
+    <form class="search-box" id="search-form">
+      <input type="text" id="q" placeholder="Введите запрос…" autofocus />
+      <button type="submit" class="btn btn-primary">Искать</button>
+    </form>
+
+    <p id="status-line"><span class="badge badge-warn">Проверка сервера…</span></p>
+
+    <div class="cards">
+      <div class="card">
+        <strong>Фильтр</strong>
+        Скрывает результаты, похожие на темы из списка запрещённых.
+      </div>
+      <div class="card">
+        <strong>Настройки</strong>
+        Панель справа — темы, порог, вкл/выкл. Модель локальная, без обновлений.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById("search-form");
+    const input = document.getElementById("q");
+    const status = document.getElementById("status-line");
+
+    async function refreshStatus() {
+      try {
+        const h = await pywebview.api.get_health();
+        const model = h.model_loaded ? "модель готова" : "модель загружается…";
+        status.innerHTML =
+          `<span class="badge badge-ok">Сервер OK</span> ` +
+          `<span class="badge badge-ok">${model}</span> ` +
+          `<span style="color:var(--muted)">тем: ${h.topics}, порог: ${h.threshold}</span>`;
+      } catch (e) {
+        status.innerHTML = `<span class="badge badge-err">Сервер недоступен</span>`;
+      }
+    }
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const q = input.value.trim();
+      if (q) pywebview.api.open_google(q);
+    });
+
+    refreshStatus();
+    setInterval(refreshStatus, 5000);
+  </script>
+</body>
+</html>

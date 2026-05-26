@@ -1,25 +1,28 @@
 #!/usr/bin/env python3
-"""ChromeX browser — Google + semantic filter (pywebview, no Node.js)."""
+"""ChromeX browser — start screen, Google, dedicated settings panel."""
 
 from __future__ import annotations
 
 import json
 import subprocess
 import sys
-import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
+BROWSER_DIR = ROOT / "browser"
 PYTHON = ROOT / ".venv" / "Scripts" / "python.exe"
 SERVER_SCRIPT = ROOT / "run_server.py"
-FILTER_JS_PATH = ROOT / "browser" / "filter-inject.js"
-SETTINGS_HTML_PATH = ROOT / "browser" / "settings_pywebview.html"
+FILTER_JS_PATH = BROWSER_DIR / "filter-inject.js"
+START_HTML = BROWSER_DIR / "start.html"
+SETTINGS_PANEL_HTML = BROWSER_DIR / "settings_panel.html"
 API = "http://127.0.0.1:8765"
 
 server_process: subprocess.Popen | None = None
 main_window = None
+settings_window = None
 
 
 def http_get(path: str) -> dict:
@@ -68,10 +71,24 @@ def start_server() -> None:
         if server_is_up():
             print("Server ready:", API)
             return
+        import time
+
         time.sleep(1)
 
     print("ERROR: server did not start in time")
     sys.exit(1)
+
+
+def file_url(path: Path) -> str:
+    return path.resolve().as_uri()
+
+
+def is_google_search(url: str) -> bool:
+    u = url.lower()
+    return (
+        "google." in u
+        and ("/search" in u or "q=" in u or "query=" in u)
+    )
 
 
 def inject_filter(window) -> None:
@@ -84,37 +101,52 @@ def inject_filter(window) -> None:
         print("Filter inject:", exc)
 
 
-class SettingsApi:
+class SettingsPanelApi:
+    """API for the right-hand settings panel window."""
+
     def load(self) -> dict:
         forbidden_path = ROOT / "server" / "forbidden.txt"
         text = forbidden_path.read_text(encoding="utf-8") if forbidden_path.exists() else ""
         try:
             cfg = http_get("/config")
-            threshold = float(cfg.get("threshold", 0.72))
+            return {
+                "forbidden": text,
+                "threshold": float(cfg.get("threshold", 0.72)),
+                "filter_enabled": bool(cfg.get("filter_enabled", True)),
+            }
         except Exception:
-            threshold = 0.72
-        return {"forbidden": text, "threshold": threshold}
+            return {"forbidden": text, "threshold": 0.72, "filter_enabled": True}
 
-    def save(self, forbidden: str, threshold: float) -> str:
+    def save(self, forbidden: str, threshold: float, filter_enabled: bool) -> str:
         (ROOT / "server" / "forbidden.txt").write_text(forbidden, encoding="utf-8")
-        http_post("/config", {"threshold": threshold, "filter_enabled": True})
+        http_post(
+            "/config",
+            {"threshold": threshold, "filter_enabled": filter_enabled},
+        )
         return "ok"
 
 
-class BrowserApi:
-    def open_settings(self) -> None:
-        html = SETTINGS_HTML_PATH.read_text(encoding="utf-8")
-        webview.create_window(
-            "ChromeX — настройки",
-            html=html,
-            js_api=SettingsApi(),
-            width=520,
-            height=640,
-        )
+class MainBrowserApi:
+    """API for start page and navigation."""
+
+    def get_health(self) -> dict:
+        return http_get("/health")
+
+    def open_google(self, query: str) -> None:
+        global main_window
+        q = urllib.parse.quote(query.strip())
+        url = f"https://www.google.com/search?q={q}"
+        if main_window:
+            main_window.load_url(url)
+
+    def open_start(self) -> None:
+        global main_window
+        if main_window:
+            main_window.load_url(file_url(START_HTML))
 
 
 def main() -> None:
-    global main_window
+    global main_window, settings_window
 
     model_dir = ROOT / "models" / "paraphrase-multilingual-MiniLM-L12-v2"
     if not model_dir.is_dir():
@@ -125,20 +157,47 @@ def main() -> None:
 
     import webview
 
-    main_window = webview.create_window(
-        "ChromeX",
-        "https://www.google.com",
-        width=1280,
-        height=860,
-        js_api=BrowserApi(),
+    # Layout: settings panel (right) + main browser (left)
+    settings_w = 400
+    main_w = 940
+    h = 900
+    x0 = 80
+    y0 = 40
+
+    settings_window = webview.create_window(
+        "ChromeX — настройки",
+        url=file_url(SETTINGS_PANEL_HTML),
+        width=settings_w,
+        height=h,
+        x=x0 + main_w + 8,
+        y=y0,
+        resizable=True,
+        min_size=(320, 500),
+        js_api=SettingsPanelApi(),
     )
 
-    def on_loaded() -> None:
-        inject_filter(main_window)
+    main_window = webview.create_window(
+        "ChromeX",
+        url=file_url(START_HTML),
+        width=main_w,
+        height=h,
+        x=x0,
+        y=y0,
+        resizable=True,
+        min_size=(640, 500),
+        js_api=MainBrowserApi(),
+    )
 
-    main_window.events.loaded += on_loaded
+    def on_main_loaded() -> None:
+        url = main_window.get_current_url() if hasattr(main_window, "get_current_url") else ""
+        if not url:
+            return
+        if is_google_search(url):
+            inject_filter(main_window)
 
-    print("ChromeX started. Use gear button on Google search for settings.")
+    main_window.events.loaded += on_main_loaded
+
+    print("ChromeX: start screen + settings panel on the right")
     try:
         webview.start(gui="edgechromium", debug=False)
     except Exception:

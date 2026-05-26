@@ -192,25 +192,10 @@
     updateToggle();
   }
 
-  function injectSettingsBtn() {
-    if (!window.pywebview?.api?.open_settings) return;
-    if (document.getElementById("ssf-settings-btn")) return;
-    const btn = document.createElement("button");
-    btn.id = "ssf-settings-btn";
-    btn.textContent = "⚙";
-    btn.title = "Настройки ChromeX";
-    btn.style.cssText =
-      "margin-left:6px;padding:2px 8px;cursor:pointer;border:1px solid #dadce0;border-radius:4px;background:#fff";
-    btn.onclick = () => window.pywebview.api.open_settings();
-    const anchor = document.getElementById("ssf-toggle-btn")?.parentElement || document.querySelector("#hdtb-msb") || document.body;
-    anchor.appendChild(btn);
-  }
-
   async function boot() {
     if (!isSearchPage()) return;
     await pingServer();
     injectToggle();
-    injectSettingsBtn();
     const root = getSearchRoot();
     if (root) {
       observer = new MutationObserver(() => scheduleScan());

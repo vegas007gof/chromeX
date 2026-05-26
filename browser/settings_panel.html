@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Настройки фильтра</title>
+  <link rel="stylesheet" href="chromex.css" />
+  <style>
+    body {
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    header {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    header p {
+      margin: 4px 0 0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 18px;
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      margin: 14px 0 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+    .threshold-val {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    textarea {
+      width: 100%;
+      height: 200px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      padding: 10px;
+      font-size: 13px;
+      resize: vertical;
+    }
+    .hint {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+    footer {
+      padding: 12px 18px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+      background: var(--surface);
+    }
+    footer .btn {
+      flex: 1;
+    }
+    #msg {
+      font-size: 12px;
+      color: var(--ok);
+      margin-top: 8px;
+      min-height: 16px;
+    }
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      margin-top: 8px;
+    }
+    .switch {
+      width: 44px;
+      height: 24px;
+      background: var(--surface2);
+      border-radius: 12px;
+      position: relative;
+      cursor: pointer;
+      border: 1px solid var(--border);
+    }
+    .switch.on {
+      background: var(--accent-dim);
+    }
+    .switch::after {
+      content: "";
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      background: #fff;
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: left 0.15s;
+    }
+    .switch.on::after {
+      left: 22px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Семантический фильтр</h1>
+    <p>Темы, порог, вкл/выкл</p>
+  </header>
+
+  <div class="body">
+    <div class="toggle-row">
+      <span>Фильтр включён</span>
+      <div class="switch on" id="filter-switch" title="Вкл/выкл"></div>
+    </div>
+
+    <label>Порог блокировки</label>
+    <div class="threshold-val" id="tv">0.72</div>
+    <input type="range" id="th" min="0.5" max="0.95" step="0.01" value="0.72" />
+    <p class="hint">Выше — меньше блокировок. Ниже — строже. Рекомендуется 0.65–0.75.</p>
+
+    <label>Запрещённые темы</label>
+    <textarea id="fb" placeholder="Одна тема на строку…"></textarea>
+    <p class="hint">Строки с # игнорируются. Файл перечитывается каждые 5 с.</p>
+
+    <p id="msg"></p>
+  </div>
+
+  <footer>
+    <button class="btn btn-ghost" id="reload">Сброс</button>
+    <button class="btn btn-primary" id="save">Сохранить</button>
+  </footer>
+
+  <script>
+    const th = document.getElementById("th");
+    const tv = document.getElementById("tv");
+    const fb = document.getElementById("fb");
+    const msg = document.getElementById("msg");
+    const sw = document.getElementById("filter-switch");
+    let filterOn = true;
+
+    th.oninput = () => (tv.textContent = Number(th.value).toFixed(2));
+
+    sw.onclick = () => {
+      filterOn = !filterOn;
+      sw.classList.toggle("on", filterOn);
+    };
+
+    async function load() {
+      const d = await pywebview.api.load();
+      fb.value = d.forbidden || "";
+      th.value = d.threshold ?? 0.72;
+      tv.textContent = Number(th.value).toFixed(2);
+      filterOn = d.filter_enabled !== false;
+      sw.classList.toggle("on", filterOn);
+      msg.textContent = "";
+    }
+
+    document.getElementById("save").onclick = async () => {
+      await pywebview.api.save(fb.value, Number(th.value), filterOn);
+      msg.textContent = "Сохранено";
+    };
+
+    document.getElementById("reload").onclick = load;
+
+    load();
+  </script>
+</body>
+</html>

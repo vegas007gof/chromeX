@@ -1,4 +1,4 @@
 {
-  "threshold": 0.72,
+  "threshold": 0.5,
   "filter_enabled": true
 }
