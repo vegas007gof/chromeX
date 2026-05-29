@@ -1,6 +1,6 @@
 @echo off
 setlocal EnableExtensions
-cd /d "%~dp0\.."
+cd /d "%~dp0"
 
 echo ========================================
 echo  ChromeX — repair venv (new PC / USB)
@@ -48,6 +48,13 @@ if errorlevel 1 (
 )
 
 .venv\Scripts\python.exe -m pip install --upgrade pip
+if not exist "requirements.txt" (
+  echo ERROR: requirements.txt not found in:
+  echo   %CD%
+  echo Copy the full chromeX folder from USB, not only .bat files.
+  pause
+  exit /b 1
+)
 .venv\Scripts\python.exe -m pip install -r requirements.txt
 
 echo.
