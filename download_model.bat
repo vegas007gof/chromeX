@@ -1,8 +1,12 @@
 @echo off
+setlocal EnableExtensions
 cd /d "%~dp0"
-if not exist ".venv\Scripts\python.exe" (
-  py -3 -m venv .venv
-  .venv\Scripts\python.exe -m pip install -r requirements.txt
+
+call scripts\venv_ok.bat
+if errorlevel 1 (
+  echo Running repair_venv.bat ...
+  call repair_venv.bat
 )
+
 .venv\Scripts\python.exe scripts\download_model.py
 pause

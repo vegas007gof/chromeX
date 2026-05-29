@@ -7,10 +7,10 @@ echo  ChromeX — portable setup (run once)
 echo ========================================
 echo.
 
-if not exist ".venv\Scripts\python.exe" (
-  echo [1/3] Creating Python venv...
-  py -3 -m venv .venv
-  .venv\Scripts\python.exe -m pip install -r requirements.txt
+call scripts\venv_ok.bat
+if errorlevel 1 (
+  echo [1/3] Creating / repairing venv for this PC...
+  call repair_venv.bat
 ) else (
   echo [1/3] Venv OK — updating packages...
   .venv\Scripts\python.exe -m pip install -r requirements.txt -q
@@ -21,12 +21,11 @@ echo [2/3] Downloading model to models\ (one time, ~120 MB)...
 .venv\Scripts\python.exe scripts\download_model.py
 
 echo.
-echo [3/3] Browser uses Python + pywebview (Node.js NOT required).
+echo [3/3] Done.
 echo.
-
-echo Done.
 echo   launch_browser.bat  — ChromeX browser
-echo   run_server.bat      — API only (for Chrome extension)
+echo   run_server.bat      — API only
 echo.
-echo Copy the whole chromeX folder to a USB drive.
+echo USB: copy chromeX folder. On NEW PC run repair_venv.bat once.
+echo.
 pause

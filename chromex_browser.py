@@ -13,7 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 BROWSER_DIR = ROOT / "browser"
-PYTHON = ROOT / ".venv" / "Scripts" / "python.exe"
+PYTHON = Path(sys.executable)
 SERVER_SCRIPT = ROOT / "run_server.py"
 FILTER_JS_PATH = BROWSER_DIR / "filter-inject.js"
 START_HTML = BROWSER_DIR / "start.html"
@@ -56,7 +56,7 @@ def start_server() -> None:
         return
 
     if not PYTHON.exists():
-        print("Run setup_portable.bat first (.venv missing)")
+        print("Python not found:", PYTHON)
         sys.exit(1)
 
     flags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0

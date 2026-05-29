@@ -2,10 +2,15 @@
 setlocal EnableExtensions
 cd /d "%~dp0"
 
-if not exist ".venv\Scripts\python.exe" (
-  echo Run setup_portable.bat first.
-  pause
-  exit /b 1
+call scripts\venv_ok.bat
+if errorlevel 1 (
+  echo.
+  echo Virtual environment missing or from another PC.
+  echo Running repair_venv.bat ...
+  echo.
+  call repair_venv.bat
+  call scripts\venv_ok.bat
+  if errorlevel 1 exit /b 1
 )
 
 if not exist "models\paraphrase-multilingual-MiniLM-L12-v2" (
@@ -15,6 +20,5 @@ if not exist "models\paraphrase-multilingual-MiniLM-L12-v2" (
 )
 
 echo Starting ChromeX browser...
-.venv\Scripts\python.exe -m pip install pywebview -q 2>nul
 .venv\Scripts\python.exe chromex_browser.py
 if errorlevel 1 pause
