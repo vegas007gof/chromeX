@@ -13,8 +13,15 @@ if errorlevel 1 (
   if errorlevel 1 exit /b 1
 )
 
-if not exist "models\paraphrase-multilingual-MiniLM-L12-v2" (
-  echo Model not found. Run download_model.bat
+.venv\Scripts\python.exe scripts\check_model.py >nul 2>&1
+if errorlevel 1 (
+  echo.
+  echo Model not installed in: %CD%\models\
+  echo.
+  echo   1^) Run download_model.bat  ^(needs internet, ~120 MB^)
+  echo   2^) Or copy folder models\ from another PC where ChromeX works
+  echo   3^) If huggingface blocked: download_model_mirror.bat
+  echo.
   pause
   exit /b 1
 )

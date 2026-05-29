@@ -148,9 +148,13 @@ class MainBrowserApi:
 def main() -> None:
     global main_window, settings_window
 
-    model_dir = ROOT / "models" / "paraphrase-multilingual-MiniLM-L12-v2"
-    if not model_dir.is_dir():
-        print("Model not found. Run download_model.bat first.")
+    sys.path.insert(0, str(ROOT / "scripts"))
+    from model_utils import is_valid_model, model_dir
+
+    mdir = model_dir(ROOT)
+    if not is_valid_model(mdir):
+        print(f"Model not found or incomplete:\n  {mdir}")
+        print("Run download_model.bat or copy models\\ from another PC.")
         sys.exit(1)
 
     start_server()

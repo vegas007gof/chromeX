@@ -44,7 +44,16 @@ _model_ready = threading.Event()
 
 
 def _local_model_exists() -> bool:
-    return MODEL_DIR.is_dir() and any(MODEL_DIR.iterdir())
+    if not MODEL_DIR.is_dir():
+        return False
+    names = {p.name for p in MODEL_DIR.iterdir()}
+    if "config.json" not in names:
+        return False
+    return (
+        "model.safetensors" in names
+        or "pytorch_model.bin" in names
+        or any(MODEL_DIR.rglob("*.safetensors"))
+    )
 
 
 def _enable_offline_mode() -> None:
